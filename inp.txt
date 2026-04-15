@@ -1,4 +1,13 @@
-1
-Ivison
-123
-18
+1 Ash 111 10
+1 Misty 222 12
+1 Brock 333 15
+2 111 10 Pikachu 50 20 2
+2 111 20 Bulbasaur 30 15 3
+2 222 10 Staryu 40 25 1
+2 333 50 Geodude 20 30 0
+3
+5 333 50 Steelix 100 80 0
+3
+4 222
+3
+0

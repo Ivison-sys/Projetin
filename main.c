@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef enum{
+typedef enum {
     fogo,
     agua,
     eletricidade,
@@ -26,307 +26,170 @@ typedef struct {
     int nivel;
 } Treinador;
 
-char* typename(int i){
-    switch (i){
-    case 1:
-        return "Fogo";
-        break;
-    case 2:
-        return "Água";
-        break;
-    case 3:
-        return "Eletrecidade";
-        break;
-    case 4:
-        return "Planta";
-        break;
-    default:
-        return "";
-        break;
+int qtdTreinadores = 0;
+
+const char* get_nome_elemento(Elemento e) {
+    switch(e) {
+        case fogo: return "Fogo";
+        case agua: return "Agua";
+        case eletricidade: return "Eletricidade";
+        case planta: return "Planta";
+        default: return "";
     }
 }
 
-int qtdTreinadores = 0;
-
-// Funcões auxiliares
-int procurandoJogador(Treinador* treinadores, char cpf[14]){
-    for(int i = 0; i < qtdTreinadores; i++){
-        if(!strcmp(treinadores[i].cpf, cpf)) return i;
+int buscar_treinador(Treinador* t, char* cpf) {
+    for (int i = 0; i < qtdTreinadores; i++) {
+        if (strcmp(t[i].cpf, cpf) == 0) return i;
     }
-
     return -1;
 }
 
-void listandoElementos(){
-    char tipos[4][15] = {"Fogo", "Água", "Eletricidade", "Planta"};
+void cadastrarTreinador(Treinador **treinadores) {
+    char nome[30], cpf[14];
+    int idade;
+    if (scanf("%s %s %d", nome, cpf, &idade) != 3) return;
+    if (buscar_treinador(*treinadores, cpf) != -1) return;
 
-    for(int i = 0; i < 4; i++){
-        printf("(%d) - %s\n", i+1, tipos[i]);
-    }
-}
+    *treinadores = (Treinador*) realloc(*treinadores, (qtdTreinadores + 1) * sizeof(Treinador));
+    if (*treinadores == NULL) exit(1);
 
-int verificarPokemon(Treinador treinador, int idPokemon){
-    for(int i = 0; i < treinador.qtdPokemons; i++){
-        if(treinador.pokemons[i].id == idPokemon){
-            return 0;
-        }
-    }
-    return 1;
-}
-
-// Funções principais
-Treinador* cadastrarTreinador(Treinador* treinadores){
-    printf("Cadastrando Jogador!!\n");
-    Treinador treinadorAux;
-    treinadorAux.nivel = 0;
-
-    // Dados do treinador
-    printf("Nome: "); scanf(" %s", treinadorAux.nome);
-    printf("CPF: "); scanf(" %s", treinadorAux.cpf);
-    printf("Idade: "); scanf("%d", &treinadorAux.idade);
-    treinadorAux.pokemons = NULL;
-    treinadorAux.qtdPokemons = 0;
-    
-    // Verificando se o cpf é único
-    if(procurandoJogador(treinadores, treinadorAux.cpf) != -1){
-        printf("Esse CPF já consta no sistema!\n\n");
-        return treinadores;
-    }
-
-    // Adicionado um espaço para o novo treinador
-    Treinador* treinadoresAux = treinadores;
-    treinadores = (Treinador*) realloc(treinadoresAux, (qtdTreinadores + 1) * sizeof(treinadorAux));
-
-    // Boas práticas: Verifcar se a realocação foi bem sucedida.
-    if(treinadores == NULL){
-        printf("Problema de alocacao!\n");
-        free(treinadoresAux);
-        exit(1);
-    }
-
-    treinadores[qtdTreinadores] = treinadorAux;
-    printf("Treinador cadastrado com sucesso!\n\n");
+    Treinador *novo = &(*treinadores)[qtdTreinadores];
+    strcpy(novo->nome, nome);
+    strcpy(novo->cpf, cpf);
+    novo->idade = idade;
+    novo->pokemons = NULL;
+    novo->qtdPokemons = 0;
+    novo->nivel = 0;
     qtdTreinadores++;
-    return treinadores;
-    
 }
 
-Treinador* cadastrarPokemon(Treinador* treinadores){
-    printf("Cadastrando pokémon.\n");
-    Pokemon pokemonAux;
-    
+void cadastrarPokemon(Treinador *treinadores) {
+    char cpf[14], nome[30];
+    int id, xp, atq, elem;
+    if (scanf("%s %d %s %d %d %d", cpf, &id, nome, &xp, &atq, &elem) != 6) return;
+
+    int idx = buscar_treinador(treinadores, cpf);
+    if (idx == -1) return;
+
+    for (int i = 0; i < treinadores[idx].qtdPokemons; i++) {
+        if (treinadores[idx].pokemons[i].id == id) return;
+    }
+
+    treinadores[idx].pokemons = (Pokemon*) realloc(treinadores[idx].pokemons, (treinadores[idx].qtdPokemons + 1) * sizeof(Pokemon));
+    Pokemon *p = &treinadores[idx].pokemons[treinadores[idx].qtdPokemons];
+    p->id = id;
+    strcpy(p->nome, nome);
+    p->xp = xp;
+    p->ataque = atq;
+    p->tipo = (Elemento)elem;
+
+    treinadores[idx].qtdPokemons++;
+    treinadores[idx].nivel += (2 * xp + atq);
+}
+
+void removerTreinador(Treinador **treinadores) {
     char cpf[14];
-    printf("Digite o cpf do Treinador: "); scanf(" %s", cpf);
-    
-    // Procurando a posição do Treinador que corresponde ao cpf
-    int idTreinador = procurandoJogador(treinadores, cpf);
-    
-    if(idTreinador == -1){
-        printf("Treinador não encontrado\n\n");
-        return treinadores;
+    if (scanf("%s", cpf) != 1) return;
+    int idx = buscar_treinador(*treinadores, cpf);
+    if (idx == -1) return;
+
+    free((*treinadores)[idx].pokemons);
+    for (int i = idx; i < qtdTreinadores - 1; i++) {
+        (*treinadores)[i] = (*treinadores)[i + 1];
     }
 
-    printf("Informações do pokémon\n");
-    // Dados do pokémon
-    printf("Id: "), scanf("%d", &pokemonAux.id);
-    if(!verificarPokemon(treinadores[idTreinador], pokemonAux.id)){
-        printf("Esse id já estar cadastrado!\n\n");
-        return treinadores;
-    }
-    printf("Nome: "); scanf(" %s", pokemonAux.nome);
-    printf("XP (Quantidade de vida): "); scanf("%d", &pokemonAux.xp);
-    printf("Ataque: "); scanf("%d", &pokemonAux.ataque);
-    int elementoAux;
-    listandoElementos();
-    printf("Elemento (o dígito): "); scanf("%d", &elementoAux);
-    pokemonAux.tipo = (Elemento) elementoAux;
-
-    if(!verificarPokemon(treinadores[idTreinador], pokemonAux.id)){
-        printf("Esse id já estar cadastrado!\n\n");
-        return treinadores;
-    }
-
-    Pokemon* pokemonsAux = treinadores[idTreinador].pokemons;
-    int qtd = treinadores[idTreinador].qtdPokemons;
-    treinadores[idTreinador].pokemons = (Pokemon*) realloc(pokemonsAux, (qtd + 1) * sizeof(Pokemon));
-
-    if(treinadores[idTreinador].pokemons == NULL){
-        printf("Problema de alocacao!\n");
-        // free(pokemonsAux);
-        exit(1);
-    }
-    treinadores[idTreinador].pokemons[qtd] = pokemonAux;
-    treinadores[idTreinador].qtdPokemons++;
-    printf("Pokémon cadastrado com sucesso!\n\n");
-    // Atualizando o nível do treinador.
-    treinadores[idTreinador].nivel += 2*pokemonAux.xp + pokemonAux.ataque;
-    return treinadores;
-}
-
-void listarTreinadores(Treinador* treinadores){
-    printf("Listando jogadores e seus pokémons.\n");
-    if(qtdTreinadores == 0){
-        printf("Não há treinadores cadastrados!");
-    }
-    for(int i = 0; i < qtdTreinadores; i++){
-        printf("(%s) Treinador: %s Nível: %d\n", treinadores[i].cpf, treinadores[i].nome, treinadores[i].nivel);
-        for(int w = 0; w < treinadores[i].qtdPokemons; w++){
-            Pokemon pokemon = treinadores[i].pokemons[w];
-            printf("{id: %d, Nome: %s, Xp: %d, At: %d, tipo: %s}\n", pokemon.id, pokemon.nome, pokemon.xp, pokemon.ataque, typename((int) pokemon.tipo));
-        }
-        printf("\n");
-    }
-}
-
-Treinador* removerTreinador(Treinador* treinadores){
-    printf("Remover jogador!\n");
-    char cpf[14];
-    printf("Digite o cpf do Treinador: "); scanf(" %s", cpf);
-    int idTreinador = procurandoJogador(treinadores, cpf);
-
-    // verificando se há o cpf
-    if(idTreinador == -1){
-        printf("Treinador não consta no sistema.\n\n");
-        return treinadores;
-    }
-
-    // Realocar para 0 é um erro, é necessário verificar antes
-    if(qtdTreinadores == 1){
-        printf("Treinador Removido com sucesso!\n\n");
-        qtdTreinadores--;
-        return NULL;
-    }
-
-    // Reposicionar as posições antes de realocar
-    for(int i = idTreinador + 1; i < qtdTreinadores; i++){
-        treinadores[i-1] = treinadores[i];
-    }
-
-    Treinador* treinadoresAux = treinadores;
-    treinadores = (Treinador*) realloc(treinadoresAux, (qtdTreinadores - 1) * sizeof(Treinador));
-
-    // Boas práticas: Verifcar se a realocação foi bem sucedida.
-    if(treinadores == NULL){
-        printf("Problema de alocacao!\n");
-        free(treinadoresAux);
-        exit(1);
-    }
-    printf("Treinador Removido com sucesso!\n\n");
     qtdTreinadores--;
-    return treinadores;
+    if (qtdTreinadores > 0) {
+        *treinadores = (Treinador*) realloc(*treinadores, (qtdTreinadores) * sizeof(Treinador));
+    } else {
+        free(*treinadores);
+        *treinadores = NULL;
+    }
 }
 
-Treinador* AtualizarPokemon(Treinador* treinadores){
-    printf("Atualizando pokémon!\n");
-    char cpf[14];
-    printf("Digite o cpf do Treinador: "); scanf(" %s", cpf);
-    int idTreinador = procurandoJogador(treinadores, cpf);
-    if(idTreinador == -1){
-        printf("Treinador não consta no sistema.\n\n");
-        return treinadores;
+void atualizarPokemon(Treinador *treinadores) {
+    char cpf[14], nome[30];
+    int id_p, xp, atq, elem;
+    if (scanf("%s %d %s %d %d %d", cpf, &id_p, nome, &xp, &atq, &elem) != 6) return;
+
+    int t_idx = buscar_treinador(treinadores, cpf);
+    if (t_idx == -1) return;
+
+    for (int i = 0; i < treinadores[t_idx].qtdPokemons; i++) {
+        if (treinadores[t_idx].pokemons[i].id == id_p) {
+            treinadores[t_idx].nivel -= (2 * treinadores[t_idx].pokemons[i].xp + treinadores[t_idx].pokemons[i].ataque);
+            
+            strcpy(treinadores[t_idx].pokemons[i].nome, nome);
+            treinadores[t_idx].pokemons[i].xp = xp;
+            treinadores[t_idx].pokemons[i].ataque = atq;
+            treinadores[t_idx].pokemons[i].tipo = (Elemento)elem;
+            
+            treinadores[t_idx].nivel += (2 * xp + atq);
+            break;
+        }
     }
-    int keyPokemon;
-    printf("Digite o id do pokémon: "); scanf("%d", &keyPokemon);
-
-    int idPokemon = -1;
-    for(int i = 0; i < treinadores[idTreinador].qtdPokemons; i++){
-        if(treinadores[idTreinador].pokemons->id ==  keyPokemon) idPokemon = i;
-    }
-
-    if(idPokemon == -1){
-        printf("Pokémon não encontrado.\n\n");
-        return treinadores;
-    }
-
-    Pokemon pokemonAux;
-
-    // O id não muda
-    pokemonAux.id = keyPokemon;
-    // Novos dados do pokémon
-    printf("Novas informações do pokémon\n");
-    // Dados do pokémon
-    printf("Nome: "); scanf(" %s", pokemonAux.nome);
-    printf("XP (Quantidade de vida): "); scanf("%d", &pokemonAux.xp);
-    printf("Ataque: "); scanf("%d", &pokemonAux.ataque);
-    int elementoAux;
-    listandoElementos();
-    printf("Elemento (o dígito): "); scanf("%d", &elementoAux);
-    pokemonAux.tipo = (Elemento) elementoAux;
-
-    // Atualizando o nível do treinador
-    treinadores[idPokemon].nivel += 2*pokemonAux.xp + pokemonAux.ataque - (2*treinadores[idTreinador].pokemons[idPokemon].xp + treinadores[idTreinador].pokemons[idPokemon].ataque);
-    treinadores[idTreinador].pokemons[idPokemon] = pokemonAux;
-    printf("Pokémon cadastrado com sucesso!");
-    return treinadores;
 }
 
-Treinador* rank(Treinador* treinadores){    
-    Treinador treinadorAux;
-    Pokemon pokemonAux;
-    
-    // Ordenando os treinadores
-    for(int i = 0; i < qtdTreinadores; i++){
-        for(int j = 1; j < qtdTreinadores; j++){
-            if(treinadores[j].nivel > treinadores[j-1].nivel){
-                treinadorAux = treinadores[j];
-                treinadores[j] = treinadores[j-1];
-                treinadores[j-1] = treinadorAux;
+// Comando 3: Listar com "Classificação atual" e Ranking
+void listarTreinadores(Treinador *treinadores) {
+    if (qtdTreinadores == 0) {
+        printf("Classificação atual\n");
+        return;
+    }
+
+    // Ordenação Treinadores (Nível)
+    for (int i = 0; i < qtdTreinadores - 1; i++) {
+        for (int j = 0; j < qtdTreinadores - i - 1; j++) {
+            if (treinadores[j].nivel < treinadores[j+1].nivel) {
+                Treinador temp = treinadores[j];
+                treinadores[j] = treinadores[j+1];
+                treinadores[j+1] = temp;
             }
         }
     }
 
-    // Ordenando os pokémons
-    for(int i = 0; i < qtdTreinadores; i++){
-        for(int w = 0; w < treinadores[i].qtdPokemons; w++){
-            for(int j = 1; j < treinadores[i].qtdPokemons; j++){
-                if(2*treinadores[i].pokemons[j].xp + treinadores[i].pokemons[j].ataque > 2*treinadores[i].pokemons[j-1].xp + treinadores[i].pokemons[j-1].ataque){
-                    pokemonAux = treinadores[i].pokemons[j];
-                    treinadores[i].pokemons[j] = treinadores[i].pokemons[j-1];
-                    treinadores[i].pokemons[j-1] = pokemonAux;
+    // Ordenação Pokémons (Força)
+    for (int i = 0; i < qtdTreinadores; i++) {
+        for (int j = 0; j < treinadores[i].qtdPokemons - 1; j++) {
+            for (int k = 0; k < treinadores[i].qtdPokemons - j - 1; k++) {
+                int f1 = 2 * treinadores[i].pokemons[k].xp + treinadores[i].pokemons[k].ataque;
+                int f2 = 2 * treinadores[i].pokemons[k+1].xp + treinadores[i].pokemons[k+1].ataque;
+                if (f1 < f2) {
+                    Pokemon tempP = treinadores[i].pokemons[k];
+                    treinadores[i].pokemons[k] = treinadores[i].pokemons[k+1];
+                    treinadores[i].pokemons[k+1] = tempP;
                 }
             }
         }
     }
-    return treinadores;
+
+    // Saída com a frase solicitada
+    printf("Classificação atual\n");
+    for (int i = 0; i < qtdTreinadores; i++) {
+        printf("T: %s, CPF: %s, Nivel: %d\n", treinadores[i].nome, treinadores[i].cpf, treinadores[i].nivel);
+        for (int j = 0; j < treinadores[i].qtdPokemons; j++) {
+            Pokemon *p = &treinadores[i].pokemons[j];
+            printf("  P: %d, %s, %d, %d, %s\n", p->id, p->nome, p->xp, p->ataque, get_nome_elemento(p->tipo));
+        }
+    }
 }
 
-int main(){
+int main() {
     Treinador *treinadores = NULL;
     int comando;
 
-    do{
-        printf("(0) Sair\n");
-        printf("(1) Cadastrar treinador\n");
-        printf("(2) Cadastrar pokémon\n");
-        printf("(3) Listar treinadores\n");
-        printf("(4) Remover treinador\n");
-        printf("(5) Atualizar pokémon\n");
-        printf("(6) Visualizar hank\n");
-        printf("Digite o comando: "); scanf("%d", &comando);
-        switch (comando){
-        case 1:
-            treinadores = cadastrarTreinador(treinadores);
-            break;
-        case 2:
-            treinadores = cadastrarPokemon(treinadores);
-            break;
-        case 3:
-            listarTreinadores(treinadores);
-            break;
-        case 4:
-            treinadores = removerTreinador(treinadores);
-            break;
-        case 5:
-            treinadores = AtualizarPokemon(treinadores);
-            break;
-        case 6:
-            treinadores = rank(treinadores);
-            break;
-        default:
-            break;
+    while (scanf("%d", &comando) != EOF && comando != 0) {
+        switch (comando) {
+            case 1: cadastrarTreinador(&treinadores); break;
+            case 2: cadastrarPokemon(treinadores); break;
+            case 3: listarTreinadores(treinadores); break;
+            case 4: removerTreinador(&treinadores); break;
+            case 5: atualizarPokemon(treinadores); break;
         }
+    }
 
-    }while(comando != 0);
-
+    for (int i = 0; i < qtdTreinadores; i++) free(treinadores[i].pokemons);
+    free(treinadores);
     return 0;
 }
