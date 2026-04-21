@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 typedef enum {
     fogo,
     agua,
@@ -19,12 +20,21 @@ typedef struct {
 
 typedef struct {
     char nome[30];
-    char cpf[14];
+    char cpf[20];
     int idade;
     Pokemon *pokemons;
     int qtdPokemons;
     int nivel;
 } Treinador;
+
+typedef struct {
+    void (*cadastrarT)(Treinador**);
+    void (*cadastrarP)(Treinador*);
+    void (*removerT)(Treinador**);
+    void (*atualizarP)(Treinador*);
+    void (*listarT)(Treinador*);
+} Program;
+
 
 int qtdTreinadores = 0;
 
@@ -48,7 +58,7 @@ int buscar_treinador(Treinador* t, char* cpf) {
 void cadastrarTreinador(Treinador **treinadores) {
     char nome[30], cpf[14];
     int idade;
-    if (scanf("%s %s %d", nome, cpf, &idade) != 3) return;
+    scanf("%s %s %d", nome, cpf, &idade);
     if (buscar_treinador(*treinadores, cpf) != -1) return;
 
     *treinadores = (Treinador*) realloc(*treinadores, (qtdTreinadores + 1) * sizeof(Treinador));
@@ -67,7 +77,7 @@ void cadastrarTreinador(Treinador **treinadores) {
 void cadastrarPokemon(Treinador *treinadores) {
     char cpf[14], nome[30];
     int id, xp, atq, elem;
-    if (scanf("%s %d %s %d %d %d", cpf, &id, nome, &xp, &atq, &elem) != 6) return;
+    scanf("%s %d %s %d %d %d", cpf, &id, nome, &xp, &atq, &elem);
 
     int idx = buscar_treinador(treinadores, cpf);
     if (idx == -1) return;
@@ -111,7 +121,7 @@ void removerTreinador(Treinador **treinadores) {
 void atualizarPokemon(Treinador *treinadores) {
     char cpf[14], nome[30];
     int id_p, xp, atq, elem;
-    if (scanf("%s %d %s %d %d %d", cpf, &id_p, nome, &xp, &atq, &elem) != 6) return;
+    scanf("%s %d %s %d %d %d", cpf, &id_p, nome, &xp, &atq, &elem);
 
     int t_idx = buscar_treinador(treinadores, cpf);
     if (t_idx == -1) return;
@@ -177,15 +187,19 @@ void listarTreinadores(Treinador *treinadores) {
 
 int main() {
     Treinador *treinadores = NULL;
+    Program prog;
+    prog.cadastrarT = cadastrarTreinador; prog.cadastrarP = cadastrarPokemon;
+    prog.removerT = removerTreinador; prog.atualizarP = atualizarPokemon;
+    prog.listarT = listarTreinadores;
     int comando;
 
     while (scanf("%d", &comando) != EOF && comando != 0) {
         switch (comando) {
-            case 1: cadastrarTreinador(&treinadores); break;
-            case 2: cadastrarPokemon(treinadores); break;
-            case 3: listarTreinadores(treinadores); break;
-            case 4: removerTreinador(&treinadores); break;
-            case 5: atualizarPokemon(treinadores); break;
+            case 1: prog.cadastrarT(&treinadores); break;
+            case 2: prog.cadastrarP(treinadores); break;
+            case 3: prog.listarT(treinadores); break;
+            case 4: prog.removerT(&treinadores); break;
+            case 5: prog.atualizarP(treinadores); break;
         }
     }
 
